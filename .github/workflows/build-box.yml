@@ -1,0 +1,132 @@
+name: Build Vagrant Box
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: false
+
+env:
+  VERSION: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', inputs.version) }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-utils qemu-user-static binfmt-support \
+            kmod e2fsprogs fdisk curl binutils xz-utils zstd python3 initramfs-tools
+
+      - name: Prepare cache directory
+        run: sudo mkdir -p /tmp/box-build
+
+      - name: Cache downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            /tmp/box-build/2024-11-19-raspios-bookworm-armhf-lite.img.xz
+            /tmp/box-build/kernel.deb
+          key: rpi-armhf-downloads-2024-11-19
+
+      - name: Build box
+        run: sudo ./build-linux.sh
+
+      - name: Verify box file
+        run: |
+          ls -lh work/rpi-armhf.box
+          tar tzf work/rpi-armhf.box | sort
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpi-armhf-box
+          path: work/rpi-armhf.box
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rpi-armhf-box
+
+      - name: Install QEMU and Vagrant
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-system-arm qemu-utils virtiofsd
+          wget -qO- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+            | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq vagrant
+
+      - name: Install vagrant-qemu plugin
+        run: |
+          curl -fsSL -o /tmp/vagrant-qemu.gem https://github.com/christhomas/vagrant-qemu/releases/download/v0.4.1-christhomas/vagrant-qemu-0.4.1.pre.christhomas.gem
+          vagrant plugin install /tmp/vagrant-qemu.gem
+
+      - name: Register box
+        run: vagrant box add --name christhomas/vagrant-rpi-bookworm-armhf --architecture arm rpi-armhf.box
+
+      - name: Boot test VM
+        working-directory: test
+        run: vagrant up
+        timeout-minutes: 15
+
+      - name: Run virtiofs tests
+        working-directory: test
+        run: ./test-virtiofs.sh
+
+      - name: Destroy test VM
+        if: always()
+        working-directory: test
+        run: vagrant destroy -f 2>/dev/null || true
+
+  release:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rpi-armhf-box
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          files: rpi-armhf.box
+          body: |
+            Raspberry Pi OS Bookworm armhf Vagrant box ${{ env.VERSION }}
+
+            ## Install
+            ```bash
+            vagrant box add christhomas/vagrant-rpi-bookworm-armhf \
+              https://github.com/christhomas/vagrant-rpi-bookworm-armhf/releases/download/${{ env.VERSION }}/rpi-armhf.box
+            ```
+
+            ## Usage
+            ```ruby
+            Vagrant.configure("2") do |config|
+              config.vm.box = "christhomas/vagrant-rpi-bookworm-armhf"
+              config.vm.box_url = "https://github.com/christhomas/vagrant-rpi-bookworm-armhf/releases/download/${{ env.VERSION }}/rpi-armhf.box"
+              config.vm.synced_folder ".", "/vagrant", type: "virtiofs"
+            end
+            ```

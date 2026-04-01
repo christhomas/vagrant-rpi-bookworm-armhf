@@ -1,0 +1,27 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# Test Vagrantfile for the Raspberry Pi OS ARM32 (armhf) Vagrant box.
+#
+# Prerequisites:
+#   brew install antimatter-studios/tap/qemu antimatter-studios/tap/virtiofsd
+#   vagrant plugin install vagrant-qemu
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "christhomas/vagrant-rpi-bookworm-armhf"
+  config.vm.box_architecture = "arm"
+  config.vm.box_check_update = false
+  config.vm.hostname = "rpi-dev"
+
+  config.vm.provider "qemu" do |qe|
+    qe.arch = "arm"
+    qe.machine = "virt"
+    qe.cpu = "cortex-a7"
+    qe.memory = "512M"
+    qe.net_device = "virtio-net-device"
+    qe.ssh_port = 50022
+    qe.ssh_auto_correct = true
+  end
+
+  config.vm.synced_folder ".", "/vagrant", type: "virtiofs"
+end
