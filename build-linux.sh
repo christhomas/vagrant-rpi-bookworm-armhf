@@ -52,7 +52,7 @@ trap cleanup EXIT
 info "Installing build dependencies..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq qemu-utils qemu-user-static binfmt-support kmod e2fsprogs fdisk curl binutils xz-utils zstd python3 initramfs-tools
+apt-get install -y -qq qemu-utils qemu-user-static binfmt-support kmod e2fsprogs fdisk curl binutils xz-utils zstd python3 initramfs-tools xxd
 modprobe nbd max_part=8 || true
 
 # Enable binfmt for cross-architecture chroot (armhf on amd64/aarch64)
