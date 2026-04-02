@@ -229,7 +229,11 @@ fi
 # pi can write without sudo
 guest_ssh "sudo -u pi sh -c 'echo uid-test > ${GUEST_SHARED}/uid-test.txt'"
 if [[ -f "${LOCAL_SHARED}/uid-test.txt" ]]; then
-    HOST_OWNER=$(stat -f '%Su' "${LOCAL_SHARED}/uid-test.txt")
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        HOST_OWNER=$(stat -f '%Su' "${LOCAL_SHARED}/uid-test.txt")
+    else
+        HOST_OWNER=$(stat -c '%U' "${LOCAL_SHARED}/uid-test.txt")
+    fi
     if [[ "$HOST_OWNER" == "$HOST_USER" ]]; then
         pass "Guest pi writes appear as ${HOST_USER} on host"
     else
