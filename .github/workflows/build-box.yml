@@ -66,7 +66,12 @@ jobs:
       - name: Install QEMU and Vagrant
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq qemu-system-arm qemu-utils virtiofsd
+          sudo apt-get install -y -qq qemu-system-arm qemu-utils
+          # Install our virtiofsd (Ubuntu's is too old, lacks --translate-uid)
+          curl -fsSL -o /tmp/virtiofsd.tar.gz \
+            https://github.com/antimatter-studios/homebrew-tap/releases/download/virtiofsd-v1.13.5/virtiofsd-1.13.5-linux-amd64.tar.gz
+          sudo tar xzf /tmp/virtiofsd.tar.gz -C /usr/local/bin/
+          sudo chmod +x /usr/local/bin/virtiofsd
           wget -qO- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp.gpg
           echo "deb [signed-by=/usr/share/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
             | sudo tee /etc/apt/sources.list.d/hashicorp.list
