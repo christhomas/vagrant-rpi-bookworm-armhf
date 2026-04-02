@@ -27,7 +27,7 @@ jobs:
             kmod e2fsprogs fdisk curl binutils xz-utils zstd python3 initramfs-tools
 
       - name: Prepare cache directory
-        run: sudo mkdir -p /tmp/box-build
+        run: sudo mkdir -p /tmp/box-build && sudo chmod 777 /tmp/box-build
 
       - name: Cache downloads
         uses: actions/cache@v4
