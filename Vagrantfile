@@ -6,10 +6,6 @@ Vagrant.configure("2") do |config|
   config.vm.box_check_update = false
   config.vm.hostname = "build-vm"
 
-  if Vagrant.has_plugin?("vagrant-notify-forwarder2")
-    config.notify_forwarder.enable = false
-  end
-
   config.vm.provider "qemu" do |qe|
     qe.memory = "4G"
     qe.smp = "2"

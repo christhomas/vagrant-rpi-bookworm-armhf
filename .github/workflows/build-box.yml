@@ -79,9 +79,7 @@ jobs:
           sudo apt-get install -y -qq vagrant
 
       - name: Install vagrant-qemu plugin
-        run: |
-          curl -fsSL -o /tmp/vagrant-qemu.gem https://github.com/christhomas/vagrant-qemu/releases/download/v0.4.1-christhomas/vagrant-qemu-0.4.1.pre.christhomas.gem
-          vagrant plugin install /tmp/vagrant-qemu.gem
+        run: vagrant plugin install vagrant-qemu-christhomas
 
       - name: Register box
         run: vagrant box add --name christhomas/vagrant-rpi-bookworm-armhf --architecture arm rpi-armhf.box
