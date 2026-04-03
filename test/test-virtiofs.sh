@@ -101,18 +101,20 @@ compare_trees() {
 
 # ─── Preflight ──────────────────────────────────────────────────────────────────
 
-# Clean up any leftover artifacts from previous runs
-rm -rf "${LOCAL_SHARED}/local-created" "${LOCAL_SHARED}/guest-created"
+# Clean up and create fresh test directory
+rm -rf "${LOCAL_SHARED}"
+mkdir -p "${LOCAL_SHARED}/src" "${LOCAL_SHARED}/config" "${LOCAL_SHARED}/data/logs" "${LOCAL_SHARED}/data/cache"
+echo 'puts "Hello from RPi!"' > "${LOCAL_SHARED}/src/main.rb"
+echo 'console.log("test")' > "${LOCAL_SHARED}/src/app.js"
+printf "host: localhost\nport: 8080\n" > "${LOCAL_SHARED}/config/settings.yml"
+echo "$(date) build test" > "${LOCAL_SHARED}/data/logs/build.log"
+echo "cached" > "${LOCAL_SHARED}/data/cache/temp.dat"
+printf "# Test Project\nShared filesystem test\n" > "${LOCAL_SHARED}/README.md"
 
 info "Checking prerequisites..."
 
 if ! (cd "$SCRIPT_DIR" && vagrant status --machine-readable 2>/dev/null | grep -q "state,running"); then
     echo "ERROR: VM is not running. Run 'vagrant up' first."
-    exit 1
-fi
-
-if [[ ! -d "$LOCAL_SHARED" ]]; then
-    echo "ERROR: ${LOCAL_SHARED} does not exist. Create test files first."
     exit 1
 fi
 
@@ -258,7 +260,7 @@ rm -f "${LOCAL_SHARED}/uid-test.txt" "${LOCAL_SHARED}/host-owned.txt"
 # ═════════════════════════════════════════════════════════════════════════════════
 
 info "Cleaning up test artifacts..."
-rm -rf "${LOCAL_SHARED}/local-created" "${LOCAL_SHARED}/guest-created"
+rm -rf "${LOCAL_SHARED}"
 
 # ═════════════════════════════════════════════════════════════════════════════════
 # Summary

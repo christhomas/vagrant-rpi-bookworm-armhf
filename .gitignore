@@ -14,3 +14,4 @@ mnt-root/
 work/
 .DS_Store
 .history
+test/shared/
